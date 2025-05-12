@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>大樹狼人殺【6114紀念版】</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1a1a1a;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      background-color: #4caf50;
+      color: white;
+    }
+
+    #player-area {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .player-card {
+      background-color: #444;
+      padding: 10px;
+      border-radius: 8px;
+      width: 150px;
+      text-align: center;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .player-card.dead {
+      background-color: #666;
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    .player-card img {
+      width: 100%;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .player-card.revealed img {
+      display: block;
+    }
+
+    .player-card .role-description,
+    .player-card .revealed-role-name {
+      display: none;
+    }
+
+    .player-card.revealed .role-description,
+    .player-card.revealed .revealed-role-name {
+      display: block;
+    }
+
+    .kill-button {
+      background-color: #e53935;
+      color: white;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>大樹狼人殺【6114紀念版】</h1>
+
+    <h3>選擇遊玩模式</h3>
+    <select id="game-mode" onchange="selectGameMode()">
+      <option value="wolfKing12">狼王12人場</option>
+      <option value="preHunter6">預獵6人場</option>
+      <option value="preGuard6">預守6人場</option>
+      <option value="hunterWolf6">獵殺潛狼6人場</option>
+      <option value="twilight7">生還者7人場</option>
+      <option value="gods8">諸神黃昏8人場</option>
+      <option value="doomsday8">末日狂徒8人場</option>
+      <option value="hidden9">暗牌場9人</option>
+      <option value="rush10">速推場10人</option>
+      <option value="hunter10">獵殺潛狼10人</option>
+      <option value="masked10">假面之夜10人</option>
+      <option value="standard12">標準場12人</option>
+      <option value="cupid12">邱比特場12人</option>
+      <option value="elder12">禁言長老場12人</option>
+      <option value="bomb12">炸彈人場12人</option>
+      <option value="hiddenwolf12">隱狼+熊12人</option>
+      <option value="guardwolf12">狼王守衛12人</option>
+      <option value="knightwolf12">狼王騎士12人</option>
+    </select>
+
+    <button onclick="assignRoles()">分配角色</button>
+    <div id="player-area"></div>
+  </div>
+
+  <script>
+    let selectedMode = "wolfKing12";
+
+    const roleConfigs = {
+      wolfKing12: [
+        { name: "狼人", count: 2, description: "每晚與狼王共同殺害一人" },
+        { name: "狼王", count: 1, description: "如被票死，可立刻帶走一人（反殺）" },
+        { name: "預言家", count: 1, description: "每晚查驗一名玩家身份" },
+        { name: "女巫", count: 1, description: "有一瓶解藥和一瓶毒藥，各可用一次" },
+        { name: "獵人", count: 1, description: "死亡時可帶走一人" },
+        { name: "守衛", count: 1, description: "每晚守護一人（不可連續守同一人）" },
+        { name: "村民", count: 5, description: "無技能，靠推理與觀察求生" }
+      ],
+      preHunter6: [
+        { name: "狼人", count: 2, description: "每晚與狼王共同殺害一人" },
+        { name: "預言家", count: 1, description: "每晚查驗一名玩家身份" },
+        { name: "獵人", count: 1, description: "死亡時可帶走一人" },
+        { name: "村民", count: 2, description: "無技能，靠推理與觀察求生" }
+      ],
+      preGuard6: [
+        { name: "狼人", count: 2, description: "每晚與狼王共同殺害一人" },
+        { name: "預言家", count: 1, description: "每晚查驗一名玩家身份" },
+        { name: "守衛", count: 1, description: "每晚守護一人（不可連續守同一人）" },
+        { name: "村民", count: 2, description: "無技能，靠推理與觀察求生" }
+      ],
+      hunterWolf6: [
+        { name: "狼人", count: 2, description: "每晚與狼王共同殺害一人" },
+        { name: "獵人", count: 4, description: "死亡時可帶走一人" }
+      ],
+      twilight7: [
+        { name: "狼人", count: 1, description: "每晚殺害一人" },
+        { name: "白狼王", count: 1, description: "可殺死其他狼人，每晚殺人" },
+        { name: "預言家", count: 1, description: "每晚查驗一名玩家身份" },
+        { name: "女巫", count: 1, description: "有一瓶解藥和毒藥" },
+        { name: "獵人", count: 1, description: "死亡時可帶走一人" },
+        { name: "守衛", count: 1, description: "每晚守護一人" },
+        { name: "村民", count: 1, description: "無技能" }
+      ],
+      gods8: [
+        { name: "狼王", count: 1, description: "死後反殺一人" },
+        { name: "白狼王", count: 1, description: "可殺死其他狼人" },
+        { name: "惡靈騎士", count: 1, description: "有特殊技能" },
+        { name: "預言家", count: 1, description: "查驗身份" },
+        { name: "女巫", count: 1, description: "藥劑師" },
+        { name: "獵人", count: 1, description: "反殺能力" },
+        { name: "守衛", count: 1, description: "保護玩家" },
+        { name: "白癡", count: 1, description: "被票死不死" }
+      ],
+      doomsday8: [
+        { name: "狼人", count: 3, description: "殺人" },
+        { name: "預言家", count: 1, description: "查驗" },
+        { name: "守衛", count: 1, description: "保護" },
+        { name: "騎士", count: 1, description: "挑戰狼人" },
+        { name: "村民", count: 2, description: "普通村民" }
+      ],
+      hidden9: [
+        { name: "狼人", count: 3 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "村民", count: 3 }
+      ],
+      rush10: [
+        { name: "狼人", count: 3 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "村民", count: 3 },
+        { name: "炸彈人", count: 1 }
+      ],
+      hunter10: [
+        { name: "狼人", count: 3 },
+        { name: "獵人", count: 7 }
+      ],
+      masked10: [
+        { name: "狼人", count: 3 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "村民", count: 4 }
+      ],
+      standard12: [
+        { name: "狼人", count: 4 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "白癡", count: 1 },
+        { name: "村民", count: 4 }
+      ],
+      cupid12: [
+        { name: "狼人", count: 4 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "邱比特", count: 1 },
+        { name: "村民", count: 4 }
+      ],
+      elder12: [
+        { name: "狼人", count: 4 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "禁言長老", count: 1 },
+        { name: "騎士", count: 1 },
+        { name: "村民", count: 4 }
+      ],
+      bomb12: [
+        { name: "狼人", count: 4 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "炸彈人", count: 1 },
+        { name: "村民", count: 4 }
+      ],
+      hiddenwolf12: [
+        { name: "狼人", count: 3 },
+        { name: "隱狼", count: 1 },
+        { name: "訓熊師", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "白癡", count: 1 },
+        { name: "村民", count: 4 }
+      ],
+      guardwolf12: [
+        { name: "狼人", count: 3 },
+        { name: "狼王", count: 1 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "守衛", count: 1 },
+        { name: "村民", count: 4 }
+      ],
+      knightwolf12: [
+        { name: "狼人", count: 3 },
+        { name: "狼王", count: 1 },
+        { name: "預言家", count: 1 },
+        { name: "女巫", count: 1 },
+        { name: "獵人", count: 1 },
+        { name: "騎士", count: 1 },
+        { name: "村民", count: 4 }
+      ]
+    };
+
+    let players = [];
+
+    function selectGameMode() {
+      selectedMode = document.getElementById("game-mode").value;
+    }
+
+    function assignRoles() {
+      const selectedRoles = roleConfigs[selectedMode];
+      const allRoles = [];
+      selectedRoles.forEach(role => {
+        for (let i = 0; i < role.count; i++) {
+          allRoles.push({ name: role.name, description: role.description || "" });
+        }
+      });
+
+      shuffleArray(allRoles);
+      players = allRoles;
+
+      const playerArea = document.getElementById("player-area");
+      playerArea.innerHTML = "";
+
+      allRoles.forEach((role, index) => {
+        const card = document.createElement("div");
+        card.className = "player-card";
+        card.innerHTML = `
+          <div class="player-role-label">玩家 ${index + 1}</div>
+          <img src="images/${role.name}.png" alt="${role.name}" />
+          <div class="revealed-role-name">${role.name}</div>
+          <p class="role-description">${role.description}</p>
+          <button onclick="revealRole(this)">查看角色</button>
+          <button class="kill-button" onclick="killPlayer(${index})">擊殺</button>
+        `;
+        playerArea.appendChild(card);
+      });
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function revealRole(button) {
+      const card = button.parentElement;
+      if (card.classList.contains("revealed")) {
+        card.classList.remove("revealed");
+        button.textContent = "查看角色";
+      } else {
+        card.classList.add("revealed");
+        button.textContent = "隱藏角色";
+      }
+    }
+
+    function killPlayer(index) {
+      const playerCard = document.getElementsByClassName("player-card")[index];
+      playerCard.classList.add("dead");
+      const killButton = playerCard.querySelector(".kill-button");
+      killButton.disabled = true;
+      killButton.textContent = "已擊殺";
+    }
+  </script>
+</body>
+</html>
